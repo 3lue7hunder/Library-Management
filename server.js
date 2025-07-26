@@ -18,76 +18,63 @@ requiredEnvVars.forEach(envVar => {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Improved CORS configuration for Render
+console.log('🚀 Starting Library Management API...');
+console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`🔌 Port: ${PORT}`);
+
+// Enhanced CORS configuration for Render
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests from your Render domain and localhost for development
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
     const allowedOrigins = [
       'https://library-management-d0no.onrender.com',
       'http://localhost:3000',
-      'http://localhost:3001'
+      'http://localhost:3001',
+      'http://127.0.0.1:3000'
     ];
     
-    // Allow requests with no origin (like mobile apps or Postman)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      // In production, be more restrictive, but for testing allow all
-      callback(null, process.env.NODE_ENV !== 'production');
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
     }
+    
+    // For production, be more permissive to allow API testing tools
+    if (process.env.NODE_ENV === 'production') {
+      return callback(null, true);
+    }
+    
+    return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Handle preflight requests
-app.options('*', cors());
+// Trust proxy for Render
+app.set('trust proxy', 1);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Session configuration - Updated for Render
+// Enhanced session configuration for production
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
+  name: 'library.sid', // Custom session name
   cookie: { 
-    secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24, // 24 hours
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // Important for cross-origin
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax' // For cross-origin requests
   }
 }));
 
-// Health check route (should be first)
-app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'healthy', 
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: process.env.NODE_ENV || 'development',
-    port: PORT
-  });
-});
-
-// Root route
-app.get('/', (req, res) => {
-  res.json({ 
-    message: 'Library Management API v2.0',
-    status: 'running',
-    documentation: '/api-docs',
-    health: '/health',
-    features: ['CRUD Operations', 'Authentication', 'Data Validation'],
-    collections: ['Authors', 'Books', 'Users'],
-    endpoints: {
-      authentication: '/auth',
-      authors: '/authors',
-      books: '/books'
-    }
-  });
+// Add request logging middleware
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - IP: ${req.ip}`);
+  next();
 });
 
 // Routes
@@ -98,79 +85,163 @@ app.use('/books', require('./routes/books'));
 // Swagger Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
+// Enhanced root route with more information
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Library Management API v2.0',
+    status: 'active',
+    timestamp: new Date().toISOString(),
+    documentation: '/api-docs',
+    features: ['CRUD Operations', 'Authentication', 'Data Validation'],
+    collections: ['Authors', 'Books', 'Users'],
+    endpoints: {
+      authentication: '/auth (POST /register, POST /login, POST /logout, GET /profile)',
+      authors: '/authors (GET, POST, PUT, DELETE)',
+      books: '/books (GET, POST, PUT, DELETE)',
+      documentation: '/api-docs',
+      health: '/health'
+    },
+    environment: process.env.NODE_ENV || 'development',
+    port: PORT
+  });
+});
+
+// Enhanced health check route
+app.get('/health', async (req, res) => {
+  try {
+    // Test database connection
+    const { getDB } = require('./config/database');
+    const db = getDB();
+    await db.admin().ping();
+    
+    res.status(200).json({ 
+      status: 'healthy', 
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      database: 'connected',
+      environment: process.env.NODE_ENV || 'development',
+      port: PORT,
+      memory: {
+        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB',
+        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + ' MB'
+      }
+    });
+  } catch (error) {
+    console.error('Health check failed:', error);
+    res.status(503).json({ 
+      status: 'unhealthy', 
+      timestamp: new Date().toISOString(),
+      error: 'Database connection failed',
+      uptime: process.uptime()
+    });
+  }
+});
+
+// Test route for API functionality
+app.get('/test', (req, res) => {
+  res.json({
+    message: 'API is working!',
+    timestamp: new Date().toISOString(),
+    method: req.method,
+    url: req.url,
+    headers: req.headers,
+    ip: req.ip
+  });
+});
+
 // 404 handler
 app.use('*', (req, res) => {
+  console.log(`404 - Route not found: ${req.method} ${req.originalUrl}`);
   res.status(404).json({ 
     error: 'Route not found',
     message: `The route ${req.originalUrl} does not exist on this server`,
-    availableRoutes: ['/auth', '/authors', '/books', '/api-docs', '/health']
+    availableRoutes: ['/auth', '/authors', '/books', '/api-docs', '/health', '/test'],
+    timestamp: new Date().toISOString()
   });
 });
 
-// Global error handler
+// Enhanced global error handler
 app.use((err, req, res, next) => {
-  console.error('Global error handler:', err.stack);
-  res.status(500).json({ 
+  console.error('Global error handler:', {
+    error: err.message,
+    stack: err.stack,
+    url: req.url,
+    method: req.method,
+    timestamp: new Date().toISOString()
+  });
+  
+  res.status(err.status || 500).json({ 
     error: 'Something went wrong!',
     message: process.env.NODE_ENV === 'production' 
       ? 'Internal server error' 
-      : err.message
+      : err.message,
+    timestamp: new Date().toISOString()
   });
 });
 
-// Graceful shutdown
-const gracefulShutdown = () => {
-  console.log('Received shutdown signal, shutting down gracefully');
-  process.exit(0);
+// Enhanced graceful shutdown
+const gracefulShutdown = (signal) => {
+  console.log(`${signal} received, shutting down gracefully`);
+  
+  // Close server
+  const server = app.listen(PORT);
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
+  
+  // Force close after 30 seconds
+  setTimeout(() => {
+    console.error('Could not close connections in time, forcefully shutting down');
+    process.exit(1);
+  }, 30000);
 };
 
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
-// Start server with better error handling
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
+// Start server
 const startServer = async () => {
   try {
-    console.log('🚀 Starting Library Management API...');
-    console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🔌 Port: ${PORT}`);
+    console.log('🔄 Attempting to connect to MongoDB...');
+    console.log('📍 MongoDB URL:', process.env.MONGODB_URL ? 'Set' : 'Not set');
     
-    // Connect to database first
     await connectDB();
     
-    // Start server
     const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
       console.log(`🔗 Health Check: http://localhost:${PORT}/health`);
       console.log(`🌐 API Base URL: http://localhost:${PORT}`);
       
-      if (process.env.RENDER) {
+      if (process.env.NODE_ENV === 'production') {
         console.log(`🌍 Production URL: https://library-management-d0no.onrender.com`);
       }
     });
 
     // Handle server errors
     server.on('error', (error) => {
-      if (error.syscall !== 'listen') {
-        throw error;
+      if (error.code === 'EADDRINUSE') {
+        console.error(`Port ${PORT} is already in use`);
+      } else {
+        console.error('Server error:', error);
       }
-
-      switch (error.code) {
-        case 'EACCES':
-          console.error(`Port ${PORT} requires elevated privileges`);
-          process.exit(1);
-          break;
-        case 'EADDRINUSE':
-          console.error(`Port ${PORT} is already in use`);
-          process.exit(1);
-          break;
-        default:
-          throw error;
-      }
+      process.exit(1);
     });
 
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    console.error('Failed to start server:', error);
     process.exit(1);
   }
 };

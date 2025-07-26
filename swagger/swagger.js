@@ -12,22 +12,22 @@ const options = {
         email: 'support@libraryapi.com'
       }
     },
-servers: [
-  {
-    url: process.env.RENDER_EXTERNAL_URL || 'https://library-management-d0no.onrender.com',
-    description: 'Production server (Render)',
-  },
-  {
-    url: `http://localhost:${process.env.PORT || 3000}`,
-    description: 'Development server',
-  },
-],
+    servers: [
+      {
+        url: 'https://library-management-d0no.onrender.com',
+        description: 'Production server (Render)',
+      },
+      {
+        url: `http://localhost:${process.env.PORT || 3000}`,
+        description: 'Development server',
+      },
+    ],
     components: {
       securitySchemes: {
         sessionAuth: {
           type: 'apiKey',
           in: 'cookie',
-          name: 'connect.sid',
+          name: 'library.sid',
           description: 'Session-based authentication using cookies'
         }
       }
