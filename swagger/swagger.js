@@ -4,7 +4,7 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Library Management API',
+      title: 'Library Management',
       version: '2.0.0',
       description: 'A comprehensive API for managing library books and authors with authentication',
       contact: {

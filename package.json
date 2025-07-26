@@ -1,7 +1,7 @@
 {
   "name": "library-management-api",
   "version": "1.0.0",
-  "description": "A comprehensive Library Management API with CRUD operations, authentication, and MongoDB integration",
+  "description": "A comprehensive Library Management with CRUD operations, authentication, and MongoDB integration",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

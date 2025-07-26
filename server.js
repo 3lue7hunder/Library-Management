@@ -18,7 +18,7 @@ requiredEnvVars.forEach(envVar => {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-console.log('🚀 Starting Library Management API...');
+console.log('🚀 Starting Library Management...');
 console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
 console.log(`🔌 Port: ${PORT}`);
 
@@ -88,7 +88,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 // Enhanced root route with more information
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'Library Management API v2.0',
+    message: 'Library Management',
     status: 'active',
     timestamp: new Date().toISOString(),
     documentation: '/api-docs',

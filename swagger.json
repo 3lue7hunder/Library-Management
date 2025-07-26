@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.0",
   "info": {
-    "title": "Library Management API",
+    "title": "Library Management",
     "version": "2.0.0",
     "description": "A comprehensive API for managing library books and authors with authentication",
     "contact": {
@@ -229,7 +229,7 @@
     "/": {
       "get": {
         "summary": "API Information",
-        "description": "Get basic information about the Library Management API",
+        "description": "Get basic information about the Library Management",
         "responses": {
           "200": {
             "description": "API information",
@@ -240,7 +240,7 @@
                   "properties": {
                     "message": {
                       "type": "string",
-                      "example": "Library Management API v2.0"
+                      "example": "Library Management"
                     },
                     "documentation": {
                       "type": "string",
