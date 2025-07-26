@@ -5,7 +5,7 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerSpecs = require('./swagger/swagger');
 const { connectDB } = require('./config/database');
 require('dotenv').config();
-const requiredEnvVars = ['MONGODB_URI', 'SESSION_SECRET'];
+const requiredEnvVars = ['MONGODB_URL', 'SESSION_SECRET'];
 requiredEnvVars.forEach(envVar => {
   if (!process.env[envVar]) {
     console.error(`Missing required environment variable: ${envVar}`);
