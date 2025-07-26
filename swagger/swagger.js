@@ -12,14 +12,15 @@ const options = {
         email: 'support@libraryapi.com'
       }
     },
-    servers: [
-      {
-        url: process.env.NODE_ENV === 'production' 
-          ? process.env.PRODUCTION_URL || 'https://library-management-d0no.onrender.com'
-          : `http://localhost:${process.env.PORT || 3000}`,
-        description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
-      },
-    ],
+servers: [
+  {
+    url: process.env.RENDER_EXTERNAL_URL || 
+         process.env.PRODUCTION_URL || 
+         (process.env.NODE_ENV === 'production' ? 'https://library-management-d0no.onrender.com' : `http://localhost:${process.env.PORT || 3000}`),
+    description: process.env.RENDER_EXTERNAL_URL ? 'Render Production' : 
+                 (process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server'),
+  },
+],
     components: {
       securitySchemes: {
         sessionAuth: {
