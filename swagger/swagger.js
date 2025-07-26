@@ -14,11 +14,12 @@ const options = {
     },
 servers: [
   {
-    url: process.env.RENDER_EXTERNAL_URL || 
-         process.env.PRODUCTION_URL || 
-         (process.env.NODE_ENV === 'production' ? 'https://library-management-d0no.onrender.com' : `http://localhost:${process.env.PORT || 3000}`),
-    description: process.env.RENDER_EXTERNAL_URL ? 'Render Production' : 
-                 (process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server'),
+    url: process.env.RENDER_EXTERNAL_URL || 'https://library-management-d0no.onrender.com',
+    description: 'Production server (Render)',
+  },
+  {
+    url: `http://localhost:${process.env.PORT || 3000}`,
+    description: 'Development server',
   },
 ],
     components: {
