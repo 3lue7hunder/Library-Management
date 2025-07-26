@@ -20,7 +20,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-frontend-domain.com'] 
+    ? ['https://library-management-d0no.onrender.com'] 
     : ['http://localhost:3000', 'http://localhost:3001'],
   credentials: true
 }));
