@@ -6,7 +6,10 @@ const {
   register,
   login,
   logout,
-  getProfile
+  getProfile,
+  githubAuth,
+  githubCallback,
+  getAuthStatus
 } = require('../controllers/authController');
 
 /**
@@ -32,6 +35,11 @@ const {
  *           type: string
  *           description: User's password
  *           example: securepassword123
+ *         authProvider:
+ *           type: string
+ *           description: Authentication provider
+ *           example: local
+ *           enum: [local, github]
  *     LoginRequest:
  *       type: object
  *       required:
@@ -48,7 +56,7 @@ const {
  *     sessionAuth:
  *       type: apiKey
  *       in: cookie
- *       name: connect.sid
+ *       name: library.sid
  *       description: Session-based authentication using cookies
  */
 
@@ -56,7 +64,7 @@ const {
  * @swagger
  * /auth/register:
  *   post:
- *     summary: Register a new user
+ *     summary: Register a new user (local auth)
  *     tags: [Authentication]
  *     requestBody:
  *       required: true
@@ -76,7 +84,7 @@ router.post('/register', validateUser, register);
  * @swagger
  * /auth/login:
  *   post:
- *     summary: Login user
+ *     summary: Login user (local auth)
  *     tags: [Authentication]
  *     requestBody:
  *       required: true
@@ -94,10 +102,76 @@ router.post('/login', validateLogin, login);
 
 /**
  * @swagger
+ * /auth/github:
+ *   get:
+ *     summary: Login with GitHub OAuth
+ *     tags: [Authentication]
+ *     description: Redirects to GitHub for OAuth authentication
+ *     responses:
+ *       302:
+ *         description: Redirect to GitHub OAuth
+ */
+router.get('/github', githubAuth);
+
+/**
+ * @swagger
+ * /auth/github/callback:
+ *   get:
+ *     summary: GitHub OAuth callback
+ *     tags: [Authentication]
+ *     description: Handles the callback from GitHub OAuth
+ *     parameters:
+ *       - in: query
+ *         name: code
+ *         schema:
+ *           type: string
+ *         description: Authorization code from GitHub
+ *     responses:
+ *       302:
+ *         description: Redirect to application with login status
+ */
+router.get('/github/callback', githubCallback);
+
+/**
+ * @swagger
+ * /auth/status:
+ *   get:
+ *     summary: Get authentication status
+ *     tags: [Authentication]
+ *     description: Check if user is currently authenticated
+ *     responses:
+ *       200:
+ *         description: Authentication status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 authenticated:
+ *                   type: boolean
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     username:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                     authProvider:
+ *                       type: string
+ */
+router.get('/status', getAuthStatus);
+
+/**
+ * @swagger
  * /auth/logout:
  *   post:
  *     summary: Logout user
  *     tags: [Authentication]
+ *     description: Logout user (works for both local and OAuth users)
  *     responses:
  *       200:
  *         description: Logout successful

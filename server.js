@@ -1,13 +1,14 @@
 const express = require('express');
 const cors = require('cors');
 const session = require('express-session');
+const passport = require('./config/passport');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpecs = require('./swagger/swagger');
 const { connectDB } = require('./config/database');
 require('dotenv').config();
 
 // Check required environment variables
-const requiredEnvVars = ['MONGODB_URL', 'SESSION_SECRET'];
+const requiredEnvVars = ['MONGODB_URL', 'SESSION_SECRET', 'GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET'];
 requiredEnvVars.forEach(envVar => {
   if (!process.env[envVar]) {
     console.error(`Missing required environment variable: ${envVar}`);
@@ -18,7 +19,7 @@ requiredEnvVars.forEach(envVar => {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-console.log('🚀 Starting Library Management...');
+console.log('🚀 Starting Library Management with OAuth...');
 console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
 console.log(`🔌 Port: ${PORT}`);
 
@@ -71,6 +72,10 @@ app.use(session({
   }
 }));
 
+// Initialize Passport middleware
+app.use(passport.initialize());
+app.use(passport.session());
+
 // Add request logging middleware
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - IP: ${req.ip}`);
@@ -88,14 +93,15 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 // Enhanced root route with more information
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'Library Management',
+    message: 'Library Management with OAuth',
     status: 'active',
     timestamp: new Date().toISOString(),
     documentation: '/api-docs',
-    features: ['CRUD Operations', 'Authentication', 'Data Validation'],
+    features: ['CRUD Operations', 'Authentication', 'OAuth (GitHub)', 'Data Validation'],
     collections: ['Authors', 'Books', 'Users'],
     endpoints: {
       authentication: '/auth (POST /register, POST /login, POST /logout, GET /profile)',
+      oauth: '/auth/github (GET), /auth/github/callback (GET)',
       authors: '/authors (GET, POST, PUT, DELETE)',
       books: '/books (GET, POST, PUT, DELETE)',
       documentation: '/api-docs',
@@ -119,6 +125,12 @@ app.get('/health', async (req, res) => {
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       database: 'connected',
+      oauth: {
+        github: {
+          configured: !!(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET),
+          callbackUrl: process.env.GITHUB_CALLBACK_URL || "http://localhost:3000/auth/github/callback"
+        }
+      },
       environment: process.env.NODE_ENV || 'development',
       port: PORT,
       memory: {
@@ -144,6 +156,12 @@ app.get('/test', (req, res) => {
     timestamp: new Date().toISOString(),
     method: req.method,
     url: req.url,
+    authenticated: !!req.user,
+    user: req.user ? {
+      id: req.user._id,
+      username: req.user.username,
+      authProvider: req.user.authProvider || 'local'
+    } : null,
     headers: req.headers,
     ip: req.ip
   });
@@ -155,7 +173,7 @@ app.use('*', (req, res) => {
   res.status(404).json({ 
     error: 'Route not found',
     message: `The route ${req.originalUrl} does not exist on this server`,
-    availableRoutes: ['/auth', '/authors', '/books', '/api-docs', '/health', '/test'],
+    availableRoutes: ['/auth', '/auth/github', '/authors', '/books', '/api-docs', '/health', '/test'],
     timestamp: new Date().toISOString()
   });
 });
@@ -216,6 +234,7 @@ const startServer = async () => {
   try {
     console.log('🔄 Attempting to connect to MongoDB...');
     console.log('📍 MongoDB URL:', process.env.MONGODB_URL ? 'Set' : 'Not set');
+    console.log('🔑 GitHub OAuth:', process.env.GITHUB_CLIENT_ID ? 'Configured' : 'Not configured');
     
     await connectDB();
     
@@ -224,6 +243,7 @@ const startServer = async () => {
       console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
       console.log(`🔗 Health Check: http://localhost:${PORT}/health`);
       console.log(`🌐 API Base URL: http://localhost:${PORT}`);
+      console.log(`🔐 GitHub OAuth: http://localhost:${PORT}/auth/github`);
       
       if (process.env.NODE_ENV === 'production') {
         console.log(`🌍 Production URL: https://library-management-d0no.onrender.com`);
