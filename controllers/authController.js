@@ -101,6 +101,11 @@ const login = async (req, res) => {
   }
 };
 
+// GitHub OAuth login - FIXED: Properly define the function
+const githubAuth = passport.authenticate('github', { 
+  scope: ['user:email'] 
+});
+
 // GitHub OAuth callback
 const githubCallback = (req, res, next) => {
   passport.authenticate('github', (err, user, info) => {
@@ -130,9 +135,8 @@ const githubCallback = (req, res, next) => {
         authProvider: user.authProvider
       };
       
-      // REDIRECT TO API DOCS 
+      // Redirect to API docs with success message
       res.redirect('/api-docs?login=success');
-      
     });
   })(req, res, next);
 };
@@ -193,6 +197,7 @@ const getAuthStatus = (req, res) => {
   });
 };
 
+// FIXED: Export all functions including githubAuth
 module.exports = {
   register,
   login,
