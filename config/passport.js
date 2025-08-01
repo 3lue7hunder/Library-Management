@@ -101,7 +101,7 @@ passport.deserializeUser(async (id, done) => {
     const db = getDB();
     const user = await db.collection('users').findOne(
       { _id: new ObjectId(id) },
-      { projection: { accessToken: 0 } } // Don't include access token in session
+      { projection: { accessToken: 0 } } 
     );
     done(null, user);
   } catch (error) {

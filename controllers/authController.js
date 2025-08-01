@@ -101,28 +101,23 @@ const login = async (req, res) => {
   }
 };
 
-// GitHub OAuth login
-const githubAuth = passport.authenticate('github', { 
-  scope: ['user:email'] 
-});
-
 // GitHub OAuth callback
 const githubCallback = (req, res, next) => {
   passport.authenticate('github', (err, user, info) => {
     if (err) {
       console.error('GitHub OAuth error:', err);
-      return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}?error=oauth_failed`);
+      return res.redirect('/api-docs?error=oauth_failed');
     }
     
     if (!user) {
-      return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}?error=oauth_denied`);
+      return res.redirect('/api-docs?error=oauth_denied');
     }
     
     // Log the user in
     req.logIn(user, (err) => {
       if (err) {
         console.error('Session login error:', err);
-        return res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}?error=session_failed`);
+        return res.redirect('/api-docs?error=session_failed');
       }
       
       // Store additional session data
@@ -135,8 +130,9 @@ const githubCallback = (req, res, next) => {
         authProvider: user.authProvider
       };
       
-      // Redirect to success page or dashboard
-      res.redirect(`${process.env.CLIENT_URL || 'http://localhost:3000'}?login=success`);
+      // REDIRECT TO API DOCS 
+      res.redirect('/api-docs?login=success');
+      
     });
   })(req, res, next);
 };

@@ -9,7 +9,7 @@ const authorSchema = Joi.object({
   nationality: Joi.string().max(50).allow('')
 });
 
-// Book validation schema (7+ fields)
+// Book validation schema 
 const bookSchema = Joi.object({
   title: Joi.string().min(1).max(200).required(),
   authorId: Joi.string().required(),
